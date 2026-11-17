@@ -1,0 +1,2165 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#172d29">
+  <title>โยนบาป ให้หมา!</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      --ink: #fff9e9;
+      --muted: #d7ddcb;
+      --gold: #ffd166;
+      --panel: rgba(15, 34, 30, .92);
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background: linear-gradient(120deg, rgba(10, 25, 22, .82), rgba(17, 29, 22, .55)),
+        url("/images/kitchen.jpg") center / cover fixed;
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .page { width: min(1120px, 96vw); margin: 0 auto; padding: 20px 0 42px; }
+    header { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+    h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.2rem); letter-spacing: -.04em; }
+    .tagline { color: var(--muted); margin: 5px 0 0; }
+    .quick-stats { display: flex; flex-wrap: wrap; gap: 8px; }
+    .stat { min-width: 90px; padding: 8px 13px; text-align: center; border: 1px solid #ffffff2b; border-radius: 13px; background: var(--panel); }
+    .stat small { display: block; color: var(--muted); }
+    .stat strong { font-size: 1.15rem; }
+    .game-panel, .panel { padding: 14px; border: 1px solid #ffffff2b; border-radius: 18px; background: var(--panel); box-shadow: 0 16px 40px #0005; backdrop-filter: blur(7px); }
+    .canvas-wrap { position: relative; width: min(100%, 920px); margin: auto; overflow: hidden; border-radius: 12px; background: #384b3b; box-shadow: 0 8px 28px #0007; }
+    canvas { display: block; width: 100%; height: auto; aspect-ratio: 920 / 510; touch-action: manipulation; }
+    .canvas-restart {
+      position: absolute; left: 50%; top: 70%; transform: translate(-50%, -50%);
+      border: 0; border-radius: 12px; padding: 12px 20px; color: #382416;
+      background: var(--gold); box-shadow: 0 4px 14px #0008; font-weight: 900;
+    }
+    .corner-controls {
+      position: absolute; right: 16px; bottom: 14px; display: flex; align-items: end; gap: 10px;
+    }
+    .meow-button, .box-button {
+      display: grid; width: 76px; height: 76px;
+      place-content: center; border: 3px solid #fff9; border-radius: 50%; color: #382416;
+      box-shadow: 0 5px 0 #80501f, 0 7px 16px #0006;
+      font-size: 1.03rem; font-weight: 900; transition: transform .12s;
+    }
+    .meow-button { background: radial-gradient(circle at 35% 25%, #ffe6a3, #efa947); }
+    .box-button { background: radial-gradient(circle at 35% 25%, #e8f4d0, #8dbd68); }
+    .meow-button:hover { transform: translateY(-2px) scale(1.04); }
+    .meow-button:active { transform: translateY(3px); }
+    .box-button:hover { transform: translateY(-2px) scale(1.04); }
+    .box-button:active { transform: translateY(3px); }
+    .instructions { max-width: 920px; margin: 10px auto 0; padding: 0 10px; color: var(--muted); text-align: center; line-height: 1.55; overflow-wrap: anywhere; }
+    .message { min-height: 1.5em; margin: 6px 0 0; color: var(--gold); text-align: center; font-weight: 800; }
+    .bottom-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .75fr); gap: 14px; margin-top: 16px; }
+    .panel h2 { margin: 0 0 12px; font-size: 1.2rem; }
+    .panel p { color: var(--muted); line-height: 1.55; }
+    .save-row { display: flex; gap: 8px; margin-top: 13px; }
+    .save-row input { width: 100%; min-width: 0; padding: 10px; border: 1px solid #ffffff44; border-radius: 10px; color: var(--ink); background: #ffffff12; }
+    .save-row input::placeholder { color: #c3ccbd; }
+    .save-row button, .restart, .skill-controls button { border: 1px solid #ffffff38; border-radius: 10px; padding: 10px 13px; color: var(--ink); background: #ffffff18; font-weight: 800; }
+    .save-row button { color: #2b271a; background: var(--gold); border: 0; white-space: nowrap; }
+    .restart { width: 100%; margin-top: 10px; }
+    .leaderboard { width: 100%; border-collapse: collapse; }
+    .leaderboard th, .leaderboard td { padding: 9px 5px; border-bottom: 1px solid #ffffff20; text-align: left; }
+    .leaderboard th { color: var(--muted); font-size: .9rem; }
+    .leaderboard td:last-child, .leaderboard th:last-child { text-align: right; }
+    .small-note { margin: 10px 0 0; font-size: .9rem; }
+    .skill-controls { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 14px; }
+    .skill-controls button { min-height: 42px; }
+    .skill-controls .upgrade { color: #352311; background: var(--gold); border-color: #ffe29a; }
+    .skill-controls button:disabled { opacity: .58; cursor: not-allowed; }
+    @media (max-width: 720px) {
+      .page { padding-top: 14px; }
+      header { align-items: flex-start; flex-direction: column; }
+      .bottom-grid { grid-template-columns: 1fr; }
+      .game-panel { padding: 7px; }
+      .corner-controls { right: 9px; bottom: 9px; gap: 7px; }
+      .meow-button, .box-button { width: 61px; height: 61px; font-size: .82rem; }
+      .instructions { font-size: .9rem; }
+      .skill-controls { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <div>
+        <h1>โยนบาป ให้หมา!</h1>
+        <p class="tagline">แมวจอมแสบก่อเรื่อง แล้วโยนความผิดให้เจ้าหมาซะเลย!</p>
+      </div>
+      <div class="quick-stats" aria-label="สถานะเกม">
+        <div class="stat"><small>หัวใจ</small><strong id="lives">❤️❤️❤️</strong></div>
+        <div class="stat"><small>แต้มต่อเนื่อง</small><strong id="combo">1 เท่า</strong></div>
+      </div>
+    </header>
+
+    <main>
+      <section class="game-panel" aria-label="ฉากเกม">
+        <div class="canvas-wrap">
+          <canvas id="game-canvas" width="920" height="510" aria-label="เกมแมวตบของในครัว"></canvas>
+          <button id="canvas-restart" class="canvas-restart" type="button" hidden>เริ่มเกมใหม่</button>
+          <div class="corner-controls">
+            <button id="box-toggle" class="box-button" type="button" aria-label="ซ่อนตัวในกล่อง">📦<br>ซ่อนตัว</button>
+            <button id="meow-button" class="meow-button" type="button" aria-label="เมี้ยว เรียกหมาและถ่วงเวลา">🐾<br>เมี้ยว!</button>
+          </div>
+        </div>
+        <p class="instructions">คลิกสิ่งของรัวๆ (F) เพื่อตบตก • คลิกกล่อง/กด Space เพื่อซ่อนตัว • กด เมี้ยว! (M) ล่อหมาและถ่วงเวลา +3 วิ</p>
+        <p id="message" class="message" aria-live="polite">คลิกรัว ๆ ที่สิ่งของบนเคาน์เตอร์เพื่อเริ่มก่อเรื่อง!</p>
+      </section>
+
+      <div class="bottom-grid">
+        <section class="panel">
+          <h2>🏆 กระดานคะแนน</h2>
+          <table class="leaderboard">
+            <thead><tr><th>อันดับ</th><th>ชื่อ</th><th>คะแนน</th></tr></thead>
+            <tbody id="leaderboard"><tr><td colspan="3">กำลังโหลดคะแนน...</td></tr></tbody>
+          </table>
+          <form id="score-form" class="save-row">
+            <input id="player-name" name="name" maxlength="24" placeholder="กรอกชื่อของคุณ" aria-label="กรอกชื่อของคุณ" required>
+            <button type="submit">บันทึกคะแนน</button>
+          </form>
+          <p class="small-note">บันทึกคะแนนของคุณลงในห้าอันดับแรก</p>
+        </section>
+        <section class="panel">
+          <h2>วิธีเล่น</h2>
+          <p>ตบของให้ตกเพื่อเพิ่มคะแนน เจ้าของจะเตือนสามระยะก่อนหันมาตรวจ ถ้าแมวยังอยู่บนเคาน์เตอร์ตอนมีของแตกจะเสียหัวใจและถูกส่งไปนั่งสำนึกผิดในที่นอน 2.5 วินาที จากนั้นคลิกที่นอนเพื่อกระโดดกลับ ซ่อนในกล่องและให้หมาอยู่ใกล้ของแตกเพื่อโยนบาปให้สำเร็จ</p>
+          <div class="skill-controls">
+            <button id="upgrade-button" class="upgrade" type="button">🐾 อุ้งเท้าหนัก (40 🐟)</button>
+            <button id="sound-toggle" type="button" aria-pressed="true">🔊 ปิดเสียง</button>
+          </div>
+          <button id="restart-button" class="restart" type="button">เริ่มเกมใหม่</button>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="/src/gameLogic.js"></script>
+  <script>
+    (() => {
+      const WIDTH = 920;
+      const HEIGHT = 510;
+      const OWNER_DELAY_MIN = 2200;
+      const OWNER_DELAY_MAX = 4800;
+      const OWNER_CHECK_MS = 3000;
+      const OWNER_WARNING_MS = 1500;
+      const OWNER_CAUGHT_TRANSFORM_MS = 650;
+      const OWNER_GIANT_HOLD_MS = 2200;
+      const OWNER_CLEANUP_MS = 1500;
+      const OWNER_CHORE_DURATION = 6500;
+      const OWNER_X = 825;
+      const OWNER_Y = 400;
+      const OWNER_INSPECT_X = 735;
+      const GIANT_X = 695;
+      const GIANT_Y = 335;
+      const BOX_X = 122;
+      const BOX_Y = 374;
+      const BOX_CENTER_Y = BOX_Y + 32;
+      const CAT_COUNTER_Y = 248;
+      const CAT_REST_X = 355;
+      const CAT_BED_X = 245;
+      const CAT_BED_Y = 445;
+      const CAT_BED_WIDTH = 170;
+      const CAT_BED_HEIGHT = 105;
+      const CAT_BED_CAT_Y = 437;
+      const CAT_TIMEOUT_MS = 2500;
+      const CAT_MIN_X = 180;
+      const CAT_RUN_SPEED = 720;
+      const CAT_ATTACK_JUMP_MS = 250;
+      const canvas = document.getElementById('game-canvas');
+      const context = canvas.getContext('2d');
+      const imageSources = {
+        kitchen: '/images/kitchen.jpg',
+        cat: '/images/cat.jpg',
+        dog: '/images/dog.jpg',
+        owner: '/images/owner.jpg',
+        giant: '/images/giant.jpg',
+        box: '/images/box.jpg',
+        catBed: '/images/Cat%20bed.jpg'
+      };
+      const sprites = {};
+      const itemDefinitions = [
+        { name: 'ถ้วยทองคำ', points: 80, hits: 8, emoji: '🏆', x: 115, y: 128 },
+        { name: 'เค้ก', points: 20, hits: 3, emoji: '🍰', x: 232, y: 262 },
+        { name: 'กระถางต้นไม้', points: 30, hits: 4, emoji: '🪴', x: 635, y: 262 },
+        { name: 'โน้ตบุ๊ก', points: 50, hits: 6, emoji: '💻', x: 735, y: 204 },
+        { name: 'ตุ๊กตาแมวกวัก', points: 10, hits: 2, emoji: '🐱', x: 845, y: 138 }
+      ];
+
+      let game = new BlameTheDogGame();
+      let items = [];
+      let activeItem = null;
+      let activeItemUntil = 0;
+      let spills = [];
+      let debris = [];
+      let roundActive = false;
+      let roundCooldown = false;
+      let gameOver = false;
+      let totalSwats = 0;
+      let totalBrokenItems = 0;
+      let successfulFrames = 0;
+      let maxCombo = 1;
+      let chaos = 0;
+      let feverMode = false;
+      let heavyPaw = false;
+      let dogCalled = false;
+      let fishBonusPending = 0;
+      let nextFishAt = performance.now() + 7000 + Math.random() * 6000;
+      let fishExpiresAt = 0;
+      let catHidden = false;
+      let catHiding = false;
+      let catHidingAt = 0;
+      let catMotionFrom = 0;
+      let catMotionTo = 0;
+      let catX = CAT_REST_X;
+      let catY = CAT_COUNTER_Y;
+      let catTargetX = CAT_REST_X;
+      let catTargetY = CAT_COUNTER_Y;
+      let catFacingRight = false;
+      let catJump = null;
+      let catAttackPending = false;
+      let catAttackHeight = 32;
+      let catAttackType = 'vertical';
+      let catTimeout = false;
+      let catTimeoutEndsAt = 0;
+      let catTimeoutMotion = null;
+      let boxImpactAt = 0;
+      let dogX = 500;
+      let dogY = 435;
+      let ownerFacing = 'away';
+      let ownerTurnFrom = 0;
+      let ownerTurnTo = 0;
+      let ownerTurnStartedAt = performance.now();
+      let ownerChoreStartedAt = performance.now();
+      let ownerCheckFromX = OWNER_X;
+      let ownerCheckFromY = OWNER_Y;
+      let ownerCleanupStartedAt = 0;
+      let ownerCleanupEndsAt = 0;
+      let ownerCleanupFromX = OWNER_X;
+      let ownerCleanupTargetX = OWNER_X;
+      let ownerScheduleAt = performance.now();
+      let ownerTurnAt = ownerScheduleAt + OWNER_DELAY_MIN;
+      let ownerFakeAt = 0;
+      let ownerCheckStartedAt = 0;
+      let ownerCheckEndsAt = 0;
+      let ownerCheckingFake = false;
+      let catchTransitionPending = false;
+      let ownerGiantStartedAt = 0;
+      let ownerGiantUntil = 0;
+      let meowFeedbackUntil = 0;
+      let actionUntil = 0;
+      let actionAt = 0;
+      let lastCrashAt = 0;
+      let lastCrashX = 760;
+      let reaction = '';
+      let reactionAt = 0;
+      let audioEnabled = true;
+      let audioContext = null;
+      let spritesReady = false;
+      let lastFrameAt = 0;
+      const messageEl = document.getElementById('message');
+
+      function loadImage(source) {
+        return new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve(image);
+          image.onerror = () => reject(new Error('โหลดภาพฉากหรือตัวละครไม่สำเร็จ'));
+          image.src = source;
+        });
+      }
+
+      function loadTransparentSprite(image, name) {
+        const workCanvas = document.createElement('canvas');
+        const workContext = workCanvas.getContext('2d', { willReadFrequently: true });
+        const width = image.naturalWidth;
+        const height = image.naturalHeight;
+        workCanvas.width = width;
+        workCanvas.height = height;
+        workContext.drawImage(image, 0, 0);
+
+        const imageData = workContext.getImageData(0, 0, width, height);
+        const pixels = imageData.data;
+        const cornerColors = [
+          0,
+          (width - 1) * 4,
+          (height - 1) * width * 4,
+          ((height - 1) * width + width - 1) * 4
+        ].filter((offset) => pixels[offset + 3] > 0).map((offset) => [
+          pixels[offset],
+          pixels[offset + 1],
+          pixels[offset + 2]
+        ]);
+
+        function matchesCorner(pixel, tolerance) {
+          return cornerColors.some((color) => (
+            Math.max(
+              Math.abs(pixels[pixel] - color[0]),
+              Math.abs(pixels[pixel + 1] - color[1]),
+              Math.abs(pixels[pixel + 2] - color[2])
+            ) < tolerance
+          ));
+        }
+
+        if (name === 'giant') {
+          for (let pixel = 0; pixel < pixels.length; pixel += 4) {
+            if (pixels[pixel + 3] && matchesCorner(pixel, 26)) pixels[pixel + 3] = 0;
+          }
+          workContext.putImageData(imageData, 0, 0);
+          return workCanvas;
+        }
+
+        const visited = new Uint8Array(width * height);
+        const queue = new Int32Array(width * height);
+
+        function floodFrom(seedX, seedY) {
+          const seedIndex = seedY * width + seedX;
+          const seedPixel = seedIndex * 4;
+          if (visited[seedIndex] || pixels[seedPixel + 3] === 0) return;
+          const red = pixels[seedPixel];
+          const green = pixels[seedPixel + 1];
+          const blue = pixels[seedPixel + 2];
+          let head = 0;
+          let tail = 0;
+
+          function addIfSimilar(x, y) {
+            if (x < 0 || y < 0 || x >= width || y >= height) return;
+            const index = y * width + x;
+            if (visited[index]) return;
+            const pixel = index * 4;
+            if (pixels[pixel + 3] === 0) return;
+            const redDifference = pixels[pixel] - red;
+            const greenDifference = pixels[pixel + 1] - green;
+            const blueDifference = pixels[pixel + 2] - blue;
+            if (Math.max(Math.abs(redDifference), Math.abs(greenDifference), Math.abs(blueDifference)) >= 32) return;
+            visited[index] = 1;
+            queue[tail] = index;
+            tail += 1;
+          }
+
+          addIfSimilar(seedX, seedY);
+          while (head < tail) {
+            const index = queue[head];
+            head += 1;
+            const pixel = index * 4;
+            pixels[pixel + 3] = 0;
+            const x = index % width;
+            const y = Math.floor(index / width);
+            addIfSimilar(x - 1, y);
+            addIfSimilar(x + 1, y);
+            addIfSimilar(x, y - 1);
+            addIfSimilar(x, y + 1);
+          }
+        }
+
+        floodFrom(0, 0);
+        floodFrom(width - 1, 0);
+        floodFrom(0, height - 1);
+        floodFrom(width - 1, height - 1);
+        workContext.putImageData(imageData, 0, 0);
+        if (name === 'catBed') {
+          let minX = width;
+          let minY = height;
+          let maxX = -1;
+          let maxY = -1;
+          for (let y = 0; y < height; y += 1) {
+            for (let x = 0; x < width; x += 1) {
+              if (pixels[(y * width + x) * 4 + 3] <= 8) continue;
+              minX = Math.min(minX, x);
+              minY = Math.min(minY, y);
+              maxX = Math.max(maxX, x);
+              maxY = Math.max(maxY, y);
+            }
+          }
+          if (maxX >= minX && maxY >= minY) {
+            const trimmedCanvas = document.createElement('canvas');
+            trimmedCanvas.width = maxX - minX + 1;
+            trimmedCanvas.height = maxY - minY + 1;
+            trimmedCanvas.getContext('2d').drawImage(
+              workCanvas,
+              minX,
+              minY,
+              trimmedCanvas.width,
+              trimmedCanvas.height,
+              0,
+              0,
+              trimmedCanvas.width,
+              trimmedCanvas.height
+            );
+            return trimmedCanvas;
+          }
+        }
+        return workCanvas;
+      }
+
+      function loadSprites() {
+        return Promise.all(Object.keys(imageSources).map(async (name) => {
+          if (name === 'catBed') {
+            let lastError;
+            for (const source of ['/images/Cat%20bed.jpg', '/images/Cat bed.jpg']) {
+              try {
+                const image = await loadImage(source);
+                sprites.catBed = loadTransparentSprite(image, 'catBed');
+                return;
+              } catch (error) {
+                lastError = error;
+              }
+            }
+            sprites.catBed = null;
+            console.warn('โหลดภาพที่นอนไม่สำเร็จ ใช้เบาะสำรองจาก Canvas', lastError);
+            return;
+          }
+          const image = await loadImage(imageSources[name]);
+          sprites[name] = name === 'kitchen' ? image : loadTransparentSprite(image, name);
+        }));
+      }
+
+      function createItems() {
+        items = itemDefinitions.map((definition) => ({
+          ...definition,
+          startX: definition.x,
+          startY: definition.y,
+          x: definition.x,
+          y: definition.y,
+          swats: 0,
+          falling: false,
+          fallen: false,
+          velocityY: 0,
+          fallDistance: 0,
+          fallDirection: definition.x >= 700 ? -1 : 1,
+          pointMultiplier: 1,
+          counted: false
+        }));
+      }
+
+      function spawnGoldFish(now) {
+        items.push({
+          name: 'ปลาทูทองคำ',
+          points: 40,
+          hits: 2,
+          emoji: '🐟',
+          x: 465,
+          startX: 465,
+          y: 246,
+          startY: 246,
+          swats: 0,
+          falling: false,
+          fallen: false,
+          velocityY: 0,
+          fallDistance: 0,
+          fallDirection: 1,
+          pointMultiplier: 1,
+          counted: false,
+          special: true
+        });
+        fishExpiresAt = now + 8000;
+        nextFishAt = now + 13000 + Math.random() * 9000;
+        setMessage('ปลาทูทองคำโผล่บนโต๊ะแล้ว! ตบสองครั้งรับโบนัส 40 คะแนน');
+      }
+
+      function roundedRect(x, y, width, height, radius) {
+        context.beginPath();
+        context.moveTo(x + radius, y);
+        context.arcTo(x + width, y, x + width, y + height, radius);
+        context.arcTo(x + width, y + height, x, y + height, radius);
+        context.arcTo(x, y + height, x, y, radius);
+        context.arcTo(x, y, x + width, y, radius);
+        context.closePath();
+      }
+
+      function drawSpeechBubble(text, centerX, topY, width, fillColor, borderColor, tailX, tailY) {
+        const height = 30;
+        const left = Math.max(8, Math.min(WIDTH - width - 8, centerX - width / 2));
+        const actualCenterX = left + width / 2;
+        const bottom = topY + height;
+        const baseX = Math.max(left + 14, Math.min(left + width - 14, tailX));
+        const tipX = Math.max(8, Math.min(WIDTH - 8, tailX));
+
+        context.save();
+        context.shadowColor = 'rgba(24,18,14,.34)';
+        context.shadowBlur = 5;
+        context.beginPath();
+        context.moveTo(baseX - 9, bottom - 2);
+        context.lineTo(tipX, Math.max(bottom + 8, Math.min(HEIGHT - 8, tailY)));
+        context.lineTo(baseX + 9, bottom - 2);
+        context.closePath();
+        context.fillStyle = fillColor;
+        context.fill();
+        context.strokeStyle = borderColor;
+        context.lineWidth = 1.5;
+        context.stroke();
+        roundedRect(left, topY, width, height, 9);
+        context.fillStyle = fillColor;
+        context.fill();
+        context.strokeStyle = borderColor;
+        context.stroke();
+        context.shadowBlur = 0;
+        context.font = 'bold 11px "Segoe UI", sans-serif';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillStyle = '#fff';
+        context.fillText(text, actualCenterX, topY + height / 2, width - 12);
+        context.restore();
+      }
+
+      function setMessage(text) {
+        messageEl.textContent = text;
+      }
+
+      function updateBoxToggleButton() {
+        const button = document.getElementById('box-toggle');
+        button.innerHTML = catHidden ? '🐱<br>ออกมา' : '📦<br>ซ่อนตัว';
+        button.setAttribute('aria-label', catHidden ? 'ออกจากกล่อง' : 'ซ่อนตัวในกล่อง');
+      }
+
+      function chaosMultiplier() {
+        return Math.min(3, 1 + Math.floor(chaos / 34));
+      }
+
+      function updateUpgradeButton() {
+        const button = document.getElementById('upgrade-button');
+        button.disabled = heavyPaw || game.score < 40;
+        button.textContent = heavyPaw
+          ? '🐾 อุ้งเท้าหนักพร้อมใช้ · ตบครั้งละสองฮิต'
+          : '🐾 อุ้งเท้าหนัก (40 🐟)';
+      }
+
+      function updateStats() {
+        document.getElementById('lives').textContent = `${'❤️'.repeat(game.lives)}${'🖤'.repeat(3 - game.lives)}`;
+        document.getElementById('combo').textContent = `${game.combo} เท่า`;
+        updateUpgradeButton();
+      }
+
+      function playSound(kind) {
+        if (!audioEnabled) return;
+        if (!window.AudioContext) {
+          setMessage('อุปกรณ์นี้ไม่รองรับเสียงประกอบ');
+          return;
+        }
+        if (!audioContext) audioContext = new window.AudioContext();
+        const sounds = {
+          swat: { type: 'triangle', start: 230, end: 100, duration: .09 },
+          crash: { type: 'square', start: 180, end: 48, duration: .24 },
+          meow: { type: 'sine', start: 520, end: 760, duration: .32 },
+          bark: { type: 'square', start: 145, end: 92, duration: .18 }
+        };
+        const sound = sounds[kind];
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        const now = audioContext.currentTime;
+        oscillator.type = sound.type;
+        oscillator.frequency.setValueAtTime(sound.start, now);
+        oscillator.frequency.exponentialRampToValueAtTime(sound.end, now + sound.duration);
+        gain.gain.setValueAtTime(.0001, now);
+        gain.gain.exponentialRampToValueAtTime(kind === 'crash' ? .16 : .1, now + .012);
+        gain.gain.exponentialRampToValueAtTime(.0001, now + sound.duration);
+        oscillator.connect(gain);
+        gain.connect(audioContext.destination);
+        oscillator.start(now);
+        oscillator.stop(now + sound.duration);
+      }
+
+      function currentLevel() {
+        return Math.min(4, 1 + Math.floor(totalSwats / 5));
+      }
+
+      function ownerChorePosition(now) {
+        const elapsed = Math.max(0, now - ownerChoreStartedAt);
+        const activityIndex = Math.floor(elapsed / OWNER_CHORE_DURATION) % 3;
+        const phase = (elapsed % OWNER_CHORE_DURATION) / OWNER_CHORE_DURATION;
+        if (activityIndex === 0) {
+          return { activity: 'dish', label: '🧼 ล้างจานที่อ่าง', x: 825, y: 400, direction: 1, phase };
+        }
+        if (activityIndex === 1) {
+          const angle = phase * Math.PI * 2;
+          return {
+            activity: 'wipe',
+            label: '🧽 เช็ดโต๊ะ',
+            x: 737.5 + Math.sin(angle) * 42.5,
+            y: 365,
+            direction: Math.cos(angle) >= 0 ? 1 : -1,
+            phase
+          };
+        }
+        const angle = phase * Math.PI * 2;
+        return {
+          activity: 'sweep',
+          label: '🧹 กวาดพื้น',
+          x: 747.5 + Math.sin(angle) * 62.5,
+          y: 400,
+          direction: Math.cos(angle) >= 0 ? 1 : -1,
+          phase
+        };
+      }
+
+      function scheduleOwnerTurn(now) {
+        ownerFacing = 'away';
+        setOwnerTurn(0, now);
+        ownerScheduleAt = now;
+        const delayReduction = (currentLevel() - 1) * 170;
+        const minimumDelay = Math.max(1500, OWNER_DELAY_MIN - delayReduction);
+        const maximumDelay = Math.max(minimumDelay + 1000, OWNER_DELAY_MAX - delayReduction);
+        ownerTurnAt = now + minimumDelay + Math.random() * (maximumDelay - minimumDelay);
+        ownerFakeAt = Math.random() < .32
+          ? now + 700 + Math.random() * Math.max(0, ownerTurnAt - now - 1800)
+          : 0;
+        ownerCheckEndsAt = 0;
+        ownerCheckingFake = false;
+      }
+
+      function beginOwnerCheck(now, isFake) {
+        const chore = ownerChorePosition(now);
+        ownerCheckFromX = chore.x;
+        ownerCheckFromY = chore.y;
+        ownerFacing = 'checking';
+        setOwnerTurn(1, now);
+        ownerCheckingFake = isFake;
+        ownerCheckStartedAt = now;
+        ownerCheckEndsAt = now + (isFake ? 540 : OWNER_CHECK_MS);
+        ownerFakeAt = 0;
+      }
+
+      function beginOwnerCatch(now) {
+        dogX = 390;
+        dogY = 435;
+        ownerFacing = 'giant';
+        ownerGiantStartedAt = now;
+        ownerGiantUntil = 0;
+        roundCooldown = true;
+        catchTransitionPending = true;
+        ownerCheckingFake = false;
+        ownerCheckEndsAt = now + OWNER_CAUGHT_TRANSFORM_MS;
+        reaction = 'GIANT';
+        reactionAt = now;
+        setMessage('👹 จับได้คาหนังคาเขา!!');
+      }
+
+      function beginOwnerCleanup(now) {
+        const spill = spills[0];
+        if (!spill) {
+          ownerFacing = 'away';
+          scheduleOwnerTurn(now);
+          return;
+        }
+        ownerCleanupStartedAt = now;
+        ownerCleanupEndsAt = now + OWNER_CLEANUP_MS;
+        ownerCleanupFromX = OWNER_INSPECT_X;
+        ownerCleanupTargetX = Math.max(85, Math.min(WIDTH - 85, spill.x));
+        ownerFacing = 'cleaning';
+        setOwnerTurn(0, now);
+        setMessage('เจ้าของกำลังเก็บเศษของแตกลงถังขยะ...');
+      }
+
+      function updateOwner(now) {
+        if (gameOver) return;
+        if (ownerFacing === 'giant') {
+          if (catchTransitionPending) {
+            if (now >= ownerCheckEndsAt) {
+              catchTransitionPending = false;
+              resolveOwnerLook();
+              ownerGiantUntil = now + OWNER_GIANT_HOLD_MS;
+            }
+          } else if (now >= ownerGiantUntil) {
+            if (spills.length) beginOwnerCleanup(now);
+            else scheduleOwnerTurn(now);
+          }
+          return;
+        }
+        if (ownerFacing === 'cleaning') {
+          if (now >= ownerCleanupEndsAt) {
+            spills.shift();
+            if (spills.length) {
+              ownerCleanupFromX = ownerCleanupTargetX;
+              ownerCleanupTargetX = Math.max(85, Math.min(WIDTH - 85, spills[0].x));
+              ownerCleanupStartedAt = now;
+              ownerCleanupEndsAt = now + OWNER_CLEANUP_MS;
+              setOwnerTurn(0, now);
+              setMessage('เจ้าของกำลังเดินไปเก็บเศษของชิ้นต่อไป...');
+              return;
+            }
+            spills = [];
+            debris = [];
+            lastCrashAt = 0;
+            createItems();
+            activeItem = null;
+            roundCooldown = false;
+            dogCalled = false;
+            reaction = '';
+            setMessage('เก็บเศษของแตกเรียบร้อยแล้ว ไอเทมกลับเข้าที่แล้ว!');
+            scheduleOwnerTurn(now);
+          }
+          return;
+        }
+        if (ownerFacing === 'checking') {
+          if (now >= ownerCheckEndsAt) {
+            if (game.isMessMade) {
+              if (!game.isCatHidden) {
+                beginOwnerCatch(now);
+                return;
+              }
+              resolveOwnerLook();
+              ownerCheckEndsAt = now + (reaction === 'DOG_FRAMED' ? 2300 : 800);
+              return;
+            }
+            if (spills.length) {
+              beginOwnerCleanup(now);
+              return;
+            }
+            const wasFake = ownerCheckingFake;
+            ownerFacing = 'away';
+            setOwnerTurn(0, now);
+            ownerCheckingFake = false;
+            if (!wasFake) scheduleOwnerTurn(now);
+          }
+          return;
+        }
+        if (ownerFakeAt && now >= ownerFakeAt && ownerFakeAt < ownerTurnAt) {
+          beginOwnerCheck(now, true);
+        } else if (now >= ownerTurnAt) {
+          beginOwnerCheck(now, false);
+        }
+      }
+
+      function ownerTurnAmount(now) {
+        const progress = Math.max(0, Math.min(1, (now - ownerTurnStartedAt) / 420));
+        return ownerTurnFrom + (ownerTurnTo - ownerTurnFrom) * progress;
+      }
+
+      function setOwnerTurn(target, now) {
+        ownerTurnFrom = ownerTurnAmount(now);
+        ownerTurnTo = target;
+        ownerTurnStartedAt = now;
+      }
+
+      function startCatJump(now) {
+        const type = catAttackType;
+        catJump = {
+          fromX: catX,
+          toX: catX,
+          apexX: type === 'trophy' ? 135 : catX,
+          fromY: CAT_COUNTER_Y,
+          toY: CAT_COUNTER_Y,
+          height: type === 'trophy' ? 122 : catAttackHeight,
+          startedAt: now,
+          duration: type === 'trophy' ? 580 : CAT_ATTACK_JUMP_MS,
+          type
+        };
+        catY = CAT_COUNTER_Y;
+        catAttackPending = false;
+        catAttackType = 'vertical';
+      }
+
+      function updateCatJump(now) {
+        if (!catJump) return 0;
+        const progress = Math.max(0, Math.min(1, (now - catJump.startedAt) / catJump.duration));
+        catX = catJump.type === 'trophy'
+          ? catJump.fromX + (catJump.apexX - catJump.fromX) * Math.sin(Math.PI * progress)
+          : catJump.fromX;
+        catY = CAT_COUNTER_Y - 4 * catJump.height * progress * (1 - progress);
+        if (progress === 1) {
+          catX = catJump.toX;
+          catY = catJump.toY;
+          catJump = null;
+        }
+        return progress;
+      }
+
+      function moveCatBeside(x, y, item) {
+        if (gameOver || roundCooldown || catTimeout || catHidden || catHiding || ownerFacing === 'giant') return;
+        const isTrophy = Boolean(item && item.name === 'ถ้วยทองคำ');
+        const targetX = isTrophy ? CAT_MIN_X : Math.max(CAT_MIN_X, Math.min(WIDTH - 75, x));
+        catFacingRight = isTrophy ? false : x >= catX;
+        catTargetX = targetX;
+        catTargetY = CAT_COUNTER_Y;
+        catAttackType = isTrophy ? 'trophy' : 'vertical';
+        catAttackHeight = isTrophy ? 122 : Math.max(26, Math.min(76, CAT_COUNTER_Y - (y + 34)));
+        catAttackPending = true;
+      }
+
+      function startCatTimeout(now) {
+        if (catJump) updateCatJump(now);
+        catTimeout = true;
+        catTimeoutEndsAt = now + 650 + CAT_TIMEOUT_MS;
+        catTimeoutMotion = {
+          fromX: catX,
+          fromY: catY,
+          toX: CAT_BED_X,
+          toY: CAT_BED_CAT_Y,
+          startedAt: now,
+          duration: 650,
+          direction: 'in'
+        };
+        catJump = null;
+        catAttackPending = false;
+        catAttackType = 'vertical';
+        catHidden = false;
+        catHiding = false;
+        game.isCatHidden = false;
+        catTargetX = CAT_BED_X;
+        catTargetY = CAT_BED_CAT_Y;
+        catFacingRight = false;
+        actionUntil = 0;
+        if (!gameOver) setMessage('😿 โดนทำโทษ! (2.5 วิ)');
+      }
+
+      function leaveCatTimeout(now) {
+        if (!catTimeout || now < catTimeoutEndsAt || catTimeoutMotion) return;
+        catTimeoutMotion = {
+          fromX: CAT_BED_X,
+          fromY: CAT_BED_CAT_Y,
+          toX: CAT_REST_X,
+          toY: CAT_COUNTER_Y,
+          startedAt: now,
+          duration: 700,
+          direction: 'out'
+        };
+        catTargetX = CAT_REST_X;
+        catTargetY = CAT_COUNTER_Y;
+        catFacingRight = false;
+        if (!gameOver) setMessage('ครบโทษ 2.5 วิแล้ว! แมวกำลังกระโดดกลับขึ้นเคาน์เตอร์');
+      }
+
+      function swatItem(item) {
+        if (gameOver || roundCooldown || catTimeout || catHidden || catHiding || item.falling || item.fallen || item.swats >= item.hits) return;
+        const now = performance.now();
+        moveCatBeside(item.x, item.y, item);
+        activeItem = item;
+        activeItemUntil = now + 650;
+        const addedHits = heavyPaw ? 2 : 1;
+        totalSwats += 1;
+        chaos = Math.min(100, chaos + 20);
+        item.swats = Math.min(item.hits, item.swats + addedHits);
+        item.pointMultiplier = chaosMultiplier();
+        item.x = item.startX + item.swats * 5;
+        actionUntil = now + 390;
+        actionAt = now;
+        playSound('swat');
+        if (item.swats >= item.hits) {
+          item.falling = true;
+          item.velocityY = -1;
+          item.fallDistance = 0;
+        }
+      }
+
+      function startMessRound(points) {
+        if (roundActive || gameOver) return;
+        game.knockItem(points);
+        roundActive = true;
+        setMessage('ของตกแตกแล้ว! ระวังเจ้าของสุ่มหันมาตรวจ');
+      }
+
+      function makeDebris(x, y) {
+        for (let index = 0; index < 9; index += 1) {
+          debris.push({
+            x,
+            y,
+            vx: (Math.random() - .5) * 5,
+            vy: -Math.random() * 5 - 1,
+            life: 1
+          });
+        }
+      }
+
+      function recordFallenItem(item) {
+        if (item.counted) return;
+        item.counted = true;
+        totalBrokenItems += 1;
+        const points = item.special ? 0 : item.points * item.pointMultiplier;
+        if (item.special) fishBonusPending += 40;
+        spills.push({ x: item.x, y: 430 });
+        lastCrashAt = performance.now();
+        lastCrashX = item.x;
+        makeDebris(item.x, 415);
+        playSound('crash');
+
+        if (!roundActive) startMessRound(points);
+        else game.pendingPoints += points;
+      }
+
+      function nearestSpill() {
+        if (!spills.length) return null;
+        return spills.reduce((closest, spill) => (
+          Math.abs(spill.x - dogX) < Math.abs(closest.x - dogX) ? spill : closest
+        ), spills[0]);
+      }
+
+      function dogIsNearSpill() {
+        const spill = nearestSpill();
+        return Boolean(spill && Math.hypot(spill.x - dogX, spill.y - dogY) <= 180);
+      }
+
+      function resolveOwnerLook() {
+        if (!roundActive) return;
+        roundActive = false;
+        roundCooldown = true;
+        items.forEach((item) => {
+          if (item.falling) {
+            item.falling = false;
+            item.fallen = true;
+          }
+        });
+
+        const pointsBefore = game.score;
+        const dogNearby = dogIsNearSpill();
+        const result = game.ownerLooks();
+        const pointsEarned = game.score - pointsBefore;
+        const fishBonus = fishBonusPending;
+        fishBonusPending = 0;
+        reactionAt = performance.now();
+
+        if (result === 'FRAMED') {
+          successfulFrames += 1;
+          maxCombo = Math.max(maxCombo, game.combo);
+          const wasFever = feverMode;
+          feverMode = game.combo >= 4;
+          const scoreMultiplier = (wasFever || feverMode ? 2 : 1) * (dogNearby ? 2 : 1);
+          game.score += pointsEarned * (scoreMultiplier - 1);
+          game.score += fishBonus;
+          if (dogNearby) {
+            reaction = 'DOG_FRAMED';
+            setMessage(`😡 เจ้าตูบทำอีกแล้วเรอะ! 💦 โฮ่ง?! ไม่ใช่ผมนะ! ได้คะแนนโยนบาปคูณสอง!${fishBonus ? ' โบนัสปลาทอง +40 คะแนน!' : ''}`);
+          } else {
+            reaction = 'FRAMED';
+            setMessage(feverMode
+              ? `โหมดเจ้าเล่ห์ทำงาน! คะแนนโยนบาปคูณสอง!${fishBonus ? ' โบนัสปลาทอง +40 คะแนน!' : ''}`
+              : `โยนบาปให้หมาสำเร็จ! รับคะแนนปลาทูแล้ว${fishBonus ? ' โบนัสปลาทอง +40 คะแนน!' : ''}`);
+          }
+          playSound('bark');
+          dogCalled = false;
+        } else {
+          reaction = 'CAUGHT';
+          feverMode = false;
+          fishBonusPending = 0;
+          dogCalled = false;
+          if (result === 'GAME_OVER') {
+            gameOver = true;
+            document.getElementById('canvas-restart').hidden = false;
+            reaction = 'GAME_OVER';
+            setMessage(`จบเกม! คะแนนรวม ${game.score} คะแนน`);
+          } else {
+            setMessage('👹 จับได้คาหนังคาเขา!! เสียหัวใจหนึ่งดวง');
+          }
+          dogCalled = false;
+        }
+
+        catHidden = result === 'FRAMED';
+        catHiding = false;
+        if (result !== 'FRAMED') startCatTimeout(performance.now());
+        updateBoxToggleButton();
+        updateStats();
+      }
+
+      function toggleCatPosition() {
+        if (gameOver || ownerFacing === 'giant' || catTimeout) return;
+        const now = performance.now();
+        if (catJump) {
+          updateCatJump(now);
+          catJump = null;
+        }
+        catAttackPending = false;
+        catAttackType = 'vertical';
+        const progress = catHiding ? Math.min(1, (now - catHidingAt) / 480) : 1;
+        const currentBoxProgress = catHiding
+          ? catMotionFrom + (catMotionTo - catMotionFrom) * progress
+          : (catHidden ? 1 : 0);
+        catHidden = !catHidden;
+        updateBoxToggleButton();
+        catHiding = true;
+        catHidingAt = now;
+        catMotionFrom = currentBoxProgress;
+        catMotionTo = catHidden ? 1 : 0;
+        if (!catHidden) {
+          game.isCatHidden = false;
+          catX = CAT_REST_X;
+          catTargetX = CAT_REST_X;
+          catY = CAT_COUNTER_Y;
+          catTargetY = CAT_COUNTER_Y;
+          catFacingRight = false;
+          setMessage('แมวกระโดดเด้งกลับขึ้นมาแล้ว!');
+        } else {
+          boxImpactAt = now + 480;
+          setMessage('แมวกำลังกระโดดมุดกล่องให้มิดชิด!');
+        }
+      }
+
+      function callDog() {
+        if (gameOver) return;
+        dogCalled = true;
+        const now = performance.now();
+        ownerFakeAt = 0;
+        ownerScheduleAt = now;
+        ownerTurnAt = Math.max(ownerTurnAt, now) + 3000;
+        if (ownerFacing === 'checking') {
+          ownerFacing = 'away';
+          setOwnerTurn(0, now);
+        }
+        ownerCheckEndsAt = 0;
+        ownerCheckingFake = false;
+        meowFeedbackUntil = now + 1300;
+        playSound('meow');
+        playSound('bark');
+        setMessage('❤️ เสียงเหมียวอ้อน +3 วิ! เจ้าตูบกำลังวิ่งไปดมของแตก');
+      }
+
+      function canvasPoint(event) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: (event.clientX - rect.left) * WIDTH / rect.width,
+          y: (event.clientY - rect.top) * HEIGHT / rect.height
+        };
+      }
+
+      function pointInBox(x, y) {
+        return x >= BOX_X - 90 && x <= BOX_X + 90 && y >= BOX_CENTER_Y - 70 && y <= BOX_CENTER_Y + 70;
+      }
+
+      function pointInCatBed(x, y) {
+        return x >= CAT_BED_X - CAT_BED_WIDTH / 2 && x <= CAT_BED_X + CAT_BED_WIDTH / 2
+          && y >= CAT_BED_Y - CAT_BED_HEIGHT / 2 && y <= CAT_BED_Y + CAT_BED_HEIGHT / 2;
+      }
+
+      function isPlayableSurfaceClick(x, y) {
+        return (x >= 190 && x <= 710 && y >= 235 && y <= 315)
+          || (x >= 700 && x <= 900 && y >= 110 && y <= 245)
+          || (x >= 65 && x <= 205 && y >= 90 && y <= 180);
+      }
+
+      canvas.addEventListener('click', (event) => {
+        const point = canvasPoint(event);
+        if (catTimeout) {
+          if (pointInCatBed(point.x, point.y)) leaveCatTimeout(performance.now());
+          return;
+        }
+        if (pointInBox(point.x, point.y)) {
+          toggleCatPosition();
+          return;
+        }
+        for (let index = items.length - 1; index >= 0; index -= 1) {
+          const item = items[index];
+          if (item.falling || item.fallen) continue;
+          if (Math.abs(point.x - item.x) <= 48 && Math.abs(point.y - item.y) <= 48) {
+            swatItem(item);
+            return;
+          }
+        }
+        if (isPlayableSurfaceClick(point.x, point.y)) {
+          moveCatBeside(point.x, point.y);
+        }
+      });
+
+      document.getElementById('meow-button').addEventListener('click', callDog);
+      document.getElementById('box-toggle').addEventListener('click', toggleCatPosition);
+      document.getElementById('upgrade-button').addEventListener('click', () => {
+        if (heavyPaw || game.score < 40) return;
+        game.score -= 40;
+        heavyPaw = true;
+        updateStats();
+        setMessage('อุ้งเท้าหนักพร้อมแล้ว! การตบแต่ละครั้งนับเป็นสองฮิต');
+      });
+      document.getElementById('sound-toggle').addEventListener('click', (event) => {
+        audioEnabled = !audioEnabled;
+        event.currentTarget.textContent = audioEnabled ? '🔊 ปิดเสียง' : '🔇 เปิดเสียง';
+        event.currentTarget.setAttribute('aria-pressed', String(audioEnabled));
+        setMessage(audioEnabled ? 'เปิดเสียงประกอบแล้ว' : 'ปิดเสียงประกอบแล้ว');
+      });
+
+      window.addEventListener('keydown', (event) => {
+        if (event.target instanceof HTMLElement && ['INPUT', 'TEXTAREA'].includes(event.target.tagName)) return;
+        if (event.code === 'Space') {
+          event.preventDefault();
+          toggleCatPosition();
+        } else if (event.key.toLowerCase() === 'm') {
+          callDog();
+        } else if (event.key.toLowerCase() === 'f') {
+          const item = items.find((entry) => !entry.falling && !entry.fallen && entry.swats < entry.hits);
+          if (item) swatItem(item);
+        }
+      });
+
+      function drawCover(image) {
+        const scale = Math.max(WIDTH / image.width, HEIGHT / image.height);
+        const width = image.width * scale;
+        const height = image.height * scale;
+        context.drawImage(image, (WIDTH - width) / 2, (HEIGHT - height) / 2, width, height);
+      }
+
+      function drawSprite(name, centerX, centerY, maxWidth, maxHeight, flip = false) {
+        const image = sprites[name];
+        if (!image) return;
+        const imageWidth = image.naturalWidth || image.width;
+        const imageHeight = image.naturalHeight || image.height;
+        const scale = Math.min(maxWidth / imageWidth, maxHeight / imageHeight);
+        const width = imageWidth * scale;
+        const height = imageHeight * scale;
+        context.save();
+        if (flip) {
+          context.translate(centerX, centerY);
+          context.scale(-1, 1);
+          context.drawImage(image, -width / 2, -height / 2, width, height);
+        } else {
+          context.drawImage(image, centerX - width / 2, centerY - height / 2, width, height);
+        }
+        context.restore();
+        return { width, height };
+      }
+
+      function drawBackground() {
+        if (sprites.kitchen) drawCover(sprites.kitchen);
+        else {
+          context.fillStyle = '#536b4d';
+          context.fillRect(0, 0, WIDTH, HEIGHT);
+        }
+        context.fillStyle = 'rgba(18,31,24,.09)';
+        context.fillRect(0, 0, WIDTH, HEIGHT);
+      }
+
+      function drawGroundSpills() {
+        spills.forEach((spill) => {
+          const glow = context.createRadialGradient(spill.x, spill.y, 1, spill.x, spill.y, 31);
+          glow.addColorStop(0, 'rgba(255,235,165,.34)');
+          glow.addColorStop(1, 'rgba(255,235,165,0)');
+          context.save();
+          context.globalAlpha = 1;
+          context.fillStyle = glow;
+          context.beginPath();
+          context.ellipse(spill.x, spill.y + 3, 30, 10, 0, 0, Math.PI * 2);
+          context.fill();
+          const shards = [
+            [-19, 3, 7, '#c6e7f2'],
+            [-11, -2, 8, '#f5e6bc'],
+            [-2, 4, 6, '#d7e8d0'],
+            [8, -3, 9, '#f2d69a'],
+            [18, 3, 7, '#c6e7f2']
+          ];
+          shards.forEach(([offsetX, offsetY, size, color], index) => {
+            const x = spill.x + offsetX;
+            const y = spill.y + offsetY;
+            const direction = index % 2 ? 1 : -1;
+            context.beginPath();
+            context.moveTo(x - size, y + size * .55);
+            context.lineTo(x + direction * size * .25, y - size);
+            context.lineTo(x + size, y + size * .4);
+            context.closePath();
+            context.fillStyle = color;
+            context.fill();
+            context.strokeStyle = '#5c5140';
+            context.lineWidth = 1.2;
+            context.stroke();
+          });
+          context.textAlign = 'center';
+          context.font = '19px "Segoe UI Emoji", sans-serif';
+          context.globalAlpha = .72 + .2 * Math.sin(performance.now() / 190);
+          context.fillText('✨', spill.x, spill.y - 12);
+          context.restore();
+        });
+        context.globalAlpha = 1;
+      }
+
+      function drawItems() {
+        items.forEach((item) => {
+          if (item.fallen && performance.now() - lastCrashAt > 650) return;
+          if (!item.falling && !item.fallen) {
+            const ringY = item.y + 25;
+            const glow = context.createRadialGradient(item.x, ringY, 2, item.x, ringY, 38);
+            glow.addColorStop(0, 'rgba(255,232,140,.82)');
+            glow.addColorStop(.7, 'rgba(255,211,79,.38)');
+            glow.addColorStop(1, 'rgba(255,211,79,0)');
+            context.save();
+            context.globalAlpha = 1;
+            context.fillStyle = glow;
+            context.shadowColor = '#ffe28a';
+            context.shadowBlur = 12;
+            context.beginPath();
+            context.ellipse(item.x, ringY, 36, 8, 0, 0, Math.PI * 2);
+            context.fill();
+            context.shadowBlur = 0;
+            context.strokeStyle = 'rgba(255,255,255,.94)';
+            context.lineWidth = 2;
+            context.stroke();
+            context.restore();
+          }
+          context.save();
+          context.globalAlpha = 1;
+          if (item.falling) context.translate(Math.sin(performance.now() / 45) * 4, 0);
+          context.font = '40px "Segoe UI Emoji", sans-serif';
+          context.textAlign = 'center';
+          context.textBaseline = 'middle';
+          context.shadowColor = item.special ? '#ffd54a' : '#20150d';
+          context.shadowBlur = item.special ? 16 : 9;
+          context.lineWidth = 2.5;
+          context.strokeStyle = 'rgba(25,17,12,.92)';
+          context.strokeText(item.emoji, item.x, item.y);
+          context.fillText(item.emoji, item.x, item.y);
+          context.restore();
+
+          if (!item.falling && !item.fallen) {
+            context.save();
+            const labelCenterX = item.x > 820 ? item.x - 65 : (item.x > 700 ? item.x - 35 : item.x);
+            const labelWidth = 68;
+            const labelY = item.y + 38;
+            roundedRect(labelCenterX - labelWidth / 2, labelY, labelWidth, 23, 12);
+            context.fillStyle = 'rgba(18,25,22,.84)';
+            context.fill();
+            context.strokeStyle = item.special ? '#ffd166' : '#fff9e9aa';
+            context.lineWidth = 1.4;
+            context.stroke();
+            context.fillStyle = '#fff9e9';
+            context.font = 'bold 12px "Segoe UI", sans-serif';
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(`+${item.special ? 40 : item.points} 🐟`, labelCenterX, labelY + 12, labelWidth - 6);
+            if (item === activeItem && performance.now() < activeItemUntil) {
+              const barY = labelY + 27;
+              roundedRect(labelCenterX - 25, barY, 50, 5, 3);
+              context.fillStyle = 'rgba(20,25,21,.85)';
+              context.fill();
+              roundedRect(labelCenterX - 24, barY + 1, 48 * item.swats / item.hits, 3, 2);
+              context.fillStyle = '#ffd166';
+              context.fill();
+            }
+            context.restore();
+          }
+        });
+      }
+
+      function updateCatMotion(now) {
+        if (!catHiding) return 0;
+        const progress = Math.min(1, (now - catHidingAt) / 480);
+        if (progress >= 1) {
+          catHiding = false;
+          if (catHidden) game.hideInBox();
+          else game.isCatHidden = false;
+        }
+        return progress;
+      }
+
+      function drawCatBed() {
+        context.save();
+        if (sprites.catBed) {
+          context.shadowColor = '#1b1712';
+          context.shadowBlur = 8;
+          drawSprite('catBed', CAT_BED_X, CAT_BED_Y, CAT_BED_WIDTH, CAT_BED_HEIGHT);
+        } else {
+          context.shadowColor = '#1b1712';
+          context.shadowBlur = 8;
+          context.fillStyle = '#795647';
+          context.beginPath();
+          context.ellipse(CAT_BED_X, CAT_BED_Y + 5, 85, 49, 0, 0, Math.PI * 2);
+          context.fill();
+          context.shadowBlur = 0;
+          context.fillStyle = '#a77864';
+          context.beginPath();
+          context.ellipse(CAT_BED_X, CAT_BED_Y, 79, 43, 0, 0, Math.PI * 2);
+          context.fill();
+          context.fillStyle = '#e6d6bc';
+          context.beginPath();
+          context.ellipse(CAT_BED_X, CAT_BED_Y - 2, 67, 33, 0, 0, Math.PI * 2);
+          context.fill();
+          context.fillStyle = '#f3e8d5';
+          context.beginPath();
+          context.ellipse(CAT_BED_X, CAT_BED_Y - 5, 53, 24, 0, 0, Math.PI * 2);
+          context.fill();
+        }
+        context.restore();
+      }
+
+      function drawTimeoutCat(now) {
+        if (!catTimeoutMotion && now >= catTimeoutEndsAt) leaveCatTimeout(now);
+        const motion = catTimeoutMotion;
+        let x = CAT_BED_X;
+        let y = CAT_BED_CAT_Y;
+        let progress = 1;
+        if (motion) {
+          progress = Math.max(0, Math.min(1, (now - motion.startedAt) / motion.duration));
+          const eased = smoothStep(progress);
+          x = motion.fromX + (motion.toX - motion.fromX) * eased;
+          y = motion.fromY + (motion.toY - motion.fromY) * eased - 4 * 48 * progress * (1 - progress);
+          if (progress === 1) {
+            catX = motion.toX;
+            catY = motion.toY;
+            catTimeoutMotion = null;
+            if (motion.direction === 'out') {
+              catTimeout = false;
+              catTargetX = CAT_REST_X;
+              catTargetY = CAT_COUNTER_Y;
+              setMessage('แมวกลับขึ้นเคาน์เตอร์แล้ว');
+              return false;
+            }
+          }
+        }
+
+        const sitting = !catTimeoutMotion;
+        context.save();
+        context.translate(x, y + (sitting ? Math.sin(now / 310) * .8 : 0));
+        context.rotate(sitting ? -.025 : .04);
+        context.scale(1 + .025 * Math.sin(now / 160), 1 - .025 * Math.sin(now / 160));
+        drawSprite('cat', 0, 0, 68, 64, catFacingRight);
+        context.restore();
+        context.save();
+        context.textAlign = 'center';
+        context.lineWidth = 4;
+        context.strokeStyle = '#49331f';
+        context.fillStyle = '#fff7df';
+        context.font = 'bold 12px "Segoe UI", sans-serif';
+        const timeoutLabel = !sitting
+          ? (motion && motion.direction === 'out' ? '😿 กำลังกลับขึ้นเคาน์เตอร์!' : '😿 โดนทำโทษ!')
+          : `😿 โดนทำโทษ! (${Math.max(0, (catTimeoutEndsAt - now) / 1000).toFixed(1)} วิ)`;
+        context.strokeText(timeoutLabel, CAT_BED_X, CAT_BED_Y - 66);
+        context.fillText(timeoutLabel, CAT_BED_X, CAT_BED_Y - 66);
+        context.restore();
+        return true;
+      }
+
+      function drawCat(now, delta) {
+        if (catTimeout && drawTimeoutCat(now)) return;
+        const jumpActive = Boolean(catJump);
+        const jumpProgress = updateCatJump(now);
+        const transitioning = catHiding;
+        const progress = transitioning ? updateCatMotion(now) : 0;
+        if (!catJump && !transitioning && !catHidden) {
+          const distance = catTargetX - catX;
+          if (Math.abs(distance) > .5) {
+            catX += Math.sign(distance) * Math.min(Math.abs(distance), CAT_RUN_SPEED * delta / 1000);
+            catY = CAT_COUNTER_Y;
+          } else {
+            catX = catTargetX;
+            catY = CAT_COUNTER_Y;
+            if (catAttackPending) startCatJump(now);
+          }
+        }
+        const boxProgress = transitioning
+          ? catMotionFrom + (catMotionTo - catMotionFrom) * progress
+          : (catHidden ? 1 : 0);
+        if (catHidden && !transitioning) return;
+
+        const easedBoxProgress = boxProgress * boxProgress * (3 - 2 * boxProgress);
+        const hideArc = transitioning ? 4 * 34 * progress * (1 - progress) : 0;
+        const actionProgress = Math.min(1, (now - actionAt) / 390);
+        const drawX = catX + (BOX_X - catX) * easedBoxProgress;
+        const drawY = catY + (BOX_CENTER_Y - catY) * easedBoxProgress - hideArc;
+        const walking = !catJump && !transitioning && !catHidden && Math.abs(catTargetX - catX) > 2;
+        const walkStrength = walking ? Math.min(1, Math.abs(catTargetX - catX) / 30) : 0;
+        const walkBob = Math.abs(Math.sin(now / 72)) * 4.2 * walkStrength;
+        const walkSway = Math.sin(now / 96) * .085 * walkStrength;
+        const walkLean = Math.sign(catTargetX - catX) * .09 * walkStrength;
+        const jumpPhase = jumpActive ? jumpProgress : (catJump ? 0 : (transitioning ? progress : 0));
+        const stretch = Math.sin(jumpPhase * Math.PI);
+        const launchSquash = jumpPhase < .16 ? (1 - jumpPhase / .16) : 0;
+        const landingSquash = jumpPhase > .84 ? (jumpPhase - .84) / .16 : 0;
+        const scaleX = 1 + .16 * launchSquash + .12 * landingSquash - .08 * stretch;
+        const scaleY = 1 - .16 * launchSquash - .12 * landingSquash + .2 * stretch;
+        const actionLean = now < actionUntil ? .13 : 0;
+        context.save();
+        context.translate(drawX, drawY + walkBob);
+        context.rotate(walkSway + walkLean + actionLean);
+        context.scale(scaleX, scaleY);
+        drawSprite('cat', 0, 0, 105, 118, catFacingRight);
+        context.restore();
+        if (boxProgress > .52) drawBox(now);
+        if (now < actionUntil && !catHiding) {
+          context.textAlign = 'center';
+          context.font = 'bold 25px "Segoe UI", sans-serif';
+          context.lineWidth = 4;
+          context.strokeStyle = '#57391f';
+          context.fillStyle = '#fff5d8';
+          context.strokeText('ตบ! 🐾', catX + 48, catY - 55);
+          context.fillText('ตบ! 🐾', catX + 48, catY - 55);
+          context.font = '18px "Segoe UI Emoji", sans-serif';
+          context.fillText('✨', catX + 70, catY - 42 + Math.sin(now / 35) * 4);
+          context.fillText('🐾', catX + 55, catY - 25);
+          context.save();
+          context.globalAlpha = Math.max(.25, 1 - actionProgress * .55);
+          context.strokeStyle = '#fff';
+          context.lineWidth = 2.8;
+          context.lineCap = 'round';
+          context.shadowColor = '#49351f';
+          context.shadowBlur = 3;
+          for (let index = 0; index < 3; index += 1) {
+            const clawX = catX + 64 + index * 6;
+            const clawY = catY - 18 + index * 4;
+            context.beginPath();
+            context.moveTo(clawX, clawY);
+            context.quadraticCurveTo(clawX + 5, clawY - 7, clawX + 12, clawY - 10);
+            context.stroke();
+          }
+          context.restore();
+        }
+      }
+
+      function drawBox(now) {
+        const wiggle = catHidden ? Math.sin(now / 85) * 2.2 : 0;
+        let scaleX = 1;
+        let scaleY = 1;
+        if (boxImpactAt) {
+          const impactProgress = (now - boxImpactAt) / 420;
+          if (impactProgress >= 0 && impactProgress <= 1) {
+            const bounce = Math.exp(-impactProgress * 3.6) * Math.cos(impactProgress * Math.PI * 3);
+            scaleX += .1 * bounce;
+            scaleY -= .16 * bounce;
+          } else if (impactProgress > 1) {
+            boxImpactAt = 0;
+          }
+        }
+        context.save();
+        context.translate(BOX_X + wiggle, BOX_CENTER_Y);
+        context.scale(scaleX, scaleY);
+        drawSprite('box', 0, 0, 158, 108);
+        context.restore();
+        if (catHidden) {
+          const ownerTurning = ownerFacing === 'checking' || warningStage(now) >= 3;
+          if (!ownerTurning) drawCatPeek(now);
+          context.font = '17px "Segoe UI Emoji", sans-serif';
+          context.textAlign = 'center';
+          context.fillText('✨', BOX_X - 58, BOX_CENTER_Y - 15 + Math.sin(now / 180) * 3);
+          context.fillText('✨', BOX_X + 57, BOX_CENTER_Y - 24 + Math.cos(now / 210) * 3);
+        }
+        context.fillStyle = '#fff9e9';
+        context.font = 'bold 13px "Segoe UI", sans-serif';
+        context.textAlign = 'center';
+        context.fillText(catHidden ? '📦 ซ่อนตัวอยู่' : '📦 คลิกซ่อนตัว', BOX_X, BOX_Y - 10);
+      }
+
+      function drawCatPeek(now) {
+        const glance = Math.sin(now / 520) * 4;
+        const blink = Math.sin(now / 1900) > .985;
+        context.fillStyle = '#a45d49';
+        context.beginPath();
+        context.moveTo(BOX_X - 21, BOX_Y + 7);
+        context.lineTo(BOX_X - 18, BOX_Y - 14);
+        context.lineTo(BOX_X - 4, BOX_Y + 5);
+        context.closePath();
+        context.fill();
+        context.beginPath();
+        context.moveTo(BOX_X + 4, BOX_Y + 5);
+        context.lineTo(BOX_X + 18, BOX_Y - 14);
+        context.lineTo(BOX_X + 21, BOX_Y + 7);
+        context.closePath();
+        context.fill();
+        context.fillStyle = '#f2b5a7';
+        context.beginPath();
+        context.moveTo(BOX_X - 16, BOX_Y + 3);
+        context.lineTo(BOX_X - 17, BOX_Y - 7);
+        context.lineTo(BOX_X - 8, BOX_Y + 4);
+        context.closePath();
+        context.fill();
+        context.beginPath();
+        context.moveTo(BOX_X + 8, BOX_Y + 4);
+        context.lineTo(BOX_X + 17, BOX_Y - 7);
+        context.lineTo(BOX_X + 16, BOX_Y + 3);
+        context.closePath();
+        context.fill();
+        [-9, 9].forEach((offset) => {
+          context.fillStyle = '#fff';
+          context.beginPath();
+          context.ellipse(BOX_X + offset, BOX_Y + 10, 7, blink ? 1.5 : 8, 0, 0, Math.PI * 2);
+          context.fill();
+          if (!blink) {
+            context.fillStyle = '#211b19';
+            context.beginPath();
+            context.arc(BOX_X + offset + glance, BOX_Y + 10, 3.2, 0, Math.PI * 2);
+            context.fill();
+          }
+        });
+      }
+
+      function dogTarget(now) {
+        if (ownerFacing === 'giant') return { x: 390, y: 435 };
+        const spill = nearestSpill();
+        if (spill) {
+          return {
+            x: Math.max(380, Math.min(620, spill.x)),
+            y: 435
+          };
+        }
+        if (dogCalled) return { x: 500, y: 435 };
+        return {
+          x: 500 + Math.sin(now / 1700) * 120,
+          y: 435
+        };
+      }
+
+      function drawDog(now, delta) {
+        const target = dogTarget(now);
+        const speed = dogCalled ? .15 : (spills.length ? .065 : .028);
+        const previousX = dogX;
+        const previousY = dogY;
+        dogX += (target.x - dogX) * Math.min(1, speed * delta / 16.67);
+        dogY += (target.y - dogY) * Math.min(1, speed * delta / 16.67);
+        const moving = Math.hypot(dogX - previousX, dogY - previousY) > .35;
+        const gait = moving ? Math.sin(now / 72) : Math.sin(now / 360) * .25;
+        const sniff = spills.length ? Math.sin(now / 95) * 2 : Math.sin(now / 340) * 2;
+        const bob = moving ? Math.abs(gait) * 4 : Math.sin(now / 420) * 1.4;
+        const shaking = reaction === 'DOG_FRAMED' && now - reactionAt < 2300;
+        const tremble = shaking ? Math.sin(now / 23) * 6 : 0;
+        const animatedY = Math.max(395, Math.min(448, dogY + sniff + bob));
+        context.save();
+        context.translate(dogX + tremble, animatedY);
+        context.rotate(gait * (spills.length ? .025 : .045));
+        context.scale(1 + Math.abs(gait) * .035, 1 - Math.abs(gait) * .045);
+        drawSprite('dog', 0, 0, 135, 120, dogX < previousX);
+        context.restore();
+        if (shaking) {
+          drawSpeechBubble(
+            '💦 โฮ่ง?! ไม่ใช่ผมนะ!',
+            dogX,
+            animatedY - 108,
+            176,
+            'rgba(25,31,37,.96)',
+            '#d8e6e9',
+            dogX,
+            animatedY - 54
+          );
+        }
+      }
+
+      function warningStage(now) {
+        if (ownerFacing === 'checking' || ownerFacing === 'giant' || ownerFacing === 'cleaning') return 0;
+        const remaining = ownerTurnAt - now;
+        if (remaining > OWNER_WARNING_MS) return 0;
+        if (remaining > 1000) return 1;
+        if (remaining > 500) return 2;
+        return 3;
+      }
+
+      function smoothStep(value) {
+        const clamped = Math.max(0, Math.min(1, value));
+        return clamped * clamped * (3 - 2 * clamped);
+      }
+
+      function drawOwnerBack() {
+        context.save();
+        context.scale(.88, .88);
+        context.fillStyle = '#29434a';
+        context.strokeStyle = '#4b2924';
+        context.lineWidth = 3;
+        context.beginPath();
+        context.moveTo(-20, -48);
+        context.lineTo(-34, -39);
+        context.lineTo(-30, 12);
+        context.quadraticCurveTo(0, 27, 30, 12);
+        context.lineTo(34, -39);
+        context.lineTo(20, -48);
+        context.lineTo(9, -38);
+        context.lineTo(-9, -38);
+        context.closePath();
+        context.fill();
+        context.stroke();
+        context.strokeStyle = '#52717a';
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(-22, -30);
+        context.quadraticCurveTo(0, -23, 22, -30);
+        context.stroke();
+
+        context.fillStyle = '#29272a';
+        context.strokeStyle = '#4b2924';
+        context.lineWidth = 2.5;
+        context.beginPath();
+        context.ellipse(0, -80, 34, 39, 0, 0, Math.PI * 2);
+        context.fill();
+        context.stroke();
+        context.beginPath();
+        context.moveTo(-31, -88);
+        context.quadraticCurveTo(-40, -57, -26, -48);
+        context.lineTo(-19, -64);
+        context.moveTo(31, -88);
+        context.quadraticCurveTo(39, -59, 25, -49);
+        context.lineTo(19, -65);
+        context.stroke();
+        context.strokeStyle = '#555054';
+        context.lineWidth = 1.4;
+        context.beginPath();
+        context.moveTo(-19, -94);
+        context.quadraticCurveTo(0, -104, 18, -94);
+        context.moveTo(-23, -78);
+        context.quadraticCurveTo(0, -87, 22, -78);
+        context.stroke();
+        context.restore();
+      }
+
+      function drawOwnerWarningGauge(now, stage, x, statusY) {
+        if (!stage) return;
+        const remaining = Math.max(0, ownerTurnAt - now);
+        const progress = Math.max(0, Math.min(1, (OWNER_WARNING_MS - remaining) / OWNER_WARNING_MS));
+        const y = statusY - 23;
+        context.save();
+        context.fillStyle = 'rgba(21,29,25,.86)';
+        context.beginPath();
+        context.arc(x, y, 23, 0, Math.PI * 2);
+        context.fill();
+        context.lineWidth = 4;
+        context.strokeStyle = 'rgba(255,255,255,.55)';
+        context.beginPath();
+        context.arc(x, y, 19, 0, Math.PI * 2);
+        context.stroke();
+        context.strokeStyle = stage >= 3 ? '#f34a37' : (stage === 2 ? '#ef7a36' : '#f6a63e');
+        context.lineWidth = 4;
+        context.beginPath();
+        context.arc(x, y, 19, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+        context.stroke();
+        context.font = stage >= 3 ? '20px "Segoe UI Emoji", sans-serif' : '18px "Segoe UI Emoji", sans-serif';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.shadowColor = stage >= 3 ? '#fb372d' : '#e98b27';
+        context.shadowBlur = stage >= 3 ? 9 : 4;
+        context.fillText('❗'.repeat(stage), x + (stage >= 3 ? Math.sin(now / 16) * 2 : 0), y + 1);
+        context.restore();
+      }
+
+      function drawGiantOwner(now) {
+        const progress = Math.max(0, Math.min(1, (now - ownerGiantStartedAt) / OWNER_CAUGHT_TRANSFORM_MS));
+        const transform = smoothStep(progress);
+        const giantX = GIANT_X;
+        const giantY = GIANT_Y;
+
+        if (transform < 1) {
+          context.save();
+          context.globalAlpha = 1 - transform;
+          context.translate(OWNER_X, OWNER_Y);
+          context.scale(1 + .18 * Math.sin(progress * Math.PI), 1 - .16 * transform);
+          drawSprite('owner', 0, 0, 160, 215, true);
+          context.restore();
+        }
+        if (transform > .01) {
+          const bounce = Math.sin(progress * Math.PI);
+          context.save();
+          context.globalAlpha = transform;
+          context.translate(giantX, giantY);
+          context.scale(1 + .12 * bounce, 1 - .08 * bounce);
+          drawSprite('giant', 0, 0, 187 * transform, 265 * transform);
+          context.restore();
+        }
+
+        const lightningStrength = Math.max(0, 1 - (now - ownerGiantStartedAt) / 1300);
+        if (lightningStrength) {
+          context.save();
+          context.globalAlpha = lightningStrength;
+          context.strokeStyle = '#ff3939';
+          context.lineWidth = 3;
+          context.shadowColor = '#ff1d25';
+          context.shadowBlur = 12;
+          [-1, 1].forEach((side) => {
+            context.beginPath();
+            context.moveTo(giantX + side * 48, giantY - 76);
+            context.lineTo(giantX + side * 61, giantY - 63);
+            context.lineTo(giantX + side * 52, giantY - 49);
+            context.lineTo(giantX + side * 68, giantY - 34);
+            context.stroke();
+          });
+          context.font = '27px "Segoe UI Emoji", sans-serif';
+          context.textAlign = 'center';
+          context.fillText('💢', giantX + 55, giantY - 92);
+          context.restore();
+        }
+
+        drawSpeechBubble(
+          '👹 จับได้คาหนังคาเขา!!',
+          GIANT_X - 100,
+          GIANT_Y - 167,
+          180,
+          'rgba(125,26,27,.96)',
+          '#ff827a',
+          GIANT_X - 15,
+          GIANT_Y - 120
+        );
+        context.font = '30px "Segoe UI Emoji", sans-serif';
+        context.textAlign = 'center';
+        context.fillText('💦', giantX - 77, giantY + 25 + Math.sin(now / 35) * 5);
+      }
+
+      function drawOwner(now) {
+        if (ownerFacing === 'giant') {
+          drawGiantOwner(now);
+          return;
+        }
+
+        const stage = warningStage(now);
+        const checking = ownerFacing === 'checking';
+        const cleaning = ownerFacing === 'cleaning';
+        const chore = ownerFacing === 'away' ? ownerChorePosition(now) : null;
+        const checkDuration = ownerCheckingFake ? 540 : OWNER_CHECK_MS;
+        const checkProgress = checking
+          ? Math.max(0, Math.min(1, (now - ownerCheckStartedAt) / checkDuration))
+          : 0;
+        const inspectionWalk = checking ? smoothStep(checkProgress / .18) : 0;
+        const cleanupProgress = cleaning
+          ? Math.max(0, Math.min(1, (now - ownerCleanupStartedAt) / OWNER_CLEANUP_MS))
+          : 0;
+        const cleanupEase = smoothStep(cleanupProgress);
+        const ownerX = chore
+          ? chore.x
+          : (cleaning
+            ? ownerCleanupFromX + (ownerCleanupTargetX - ownerCleanupFromX) * cleanupEase
+            : ownerCheckFromX + (OWNER_INSPECT_X - ownerCheckFromX) * inspectionWalk);
+        const ownerY = chore
+          ? chore.y
+          : (cleaning
+            ? OWNER_Y
+            : ownerCheckFromY + (OWNER_Y - ownerCheckFromY) * inspectionWalk);
+        const walkingBob = (checking && checkProgress > .08 && checkProgress < .92)
+          ? Math.abs(Math.sin(checkProgress * Math.PI * 4)) * 3.5
+          : (chore && chore.activity !== 'dish'
+            ? Math.abs(Math.sin(now / 118)) * 2.4
+            : (cleaning ? Math.abs(Math.sin(now / 112)) * 2.2 : 0));
+        const warningShake = stage >= 3 ? Math.sin(now / 15) * 4.5 : 0;
+        const drawX = ownerX + warningShake;
+        const drawY = ownerY + walkingBob;
+        const turn = ownerTurnAmount(now);
+        const turningScale = Math.max(.42, Math.abs(Math.cos(turn * Math.PI)));
+        const breathing = chore && chore.activity === 'dish' && stage === 0 ? Math.sin(now / 520) * 2.2 : 0;
+        const turnStretch = Math.sin(turn * Math.PI);
+        const direction = chore ? chore.direction : (cleaning
+          ? (ownerCleanupTargetX >= ownerCleanupFromX ? 1 : -1)
+          : (ownerCheckFromX > OWNER_X ? -1 : 1));
+        context.save();
+        context.translate(drawX, drawY + breathing);
+        context.rotate(stage > 0 ? -.035 : (checking ? -.02 : (walkingBob ? direction * -.025 : 0)));
+        context.scale(turningScale, 1 + .1 * turnStretch);
+        drawSprite('owner', 0, 0, 160, 215, checking ? turn >= .5 : direction < 0);
+        if (!checking || turn < .5) drawOwnerBack();
+        context.restore();
+
+        const activity = chore ? chore.activity : (cleaning ? 'cleanup' : '');
+        const activityLabel = chore
+          ? chore.label
+          : (cleaning ? '🗑️ เก็บเศษของแตก' : '');
+        if (stage === 0 && (chore || cleaning)) {
+          drawOwnerActivityProps(activity, drawX, drawY, direction, chore ? chore.phase : cleanupProgress, now);
+        }
+
+        if (ownerFacing === 'away' && stage === 0) {
+          for (let index = 0; index < 3; index += 1) {
+            const phase = (now / 1050 + index / 3) % 1;
+            context.save();
+            context.globalAlpha = (1 - phase) * .28;
+            context.strokeStyle = '#fff6dc';
+            context.lineWidth = 2;
+            context.beginPath();
+            context.moveTo(drawX - 30 + index * 10, drawY - 109 - phase * 25);
+            context.quadraticCurveTo(drawX - 36 + index * 10, drawY - 119 - phase * 25, drawX - 29 + index * 10, drawY - 128 - phase * 25);
+            context.stroke();
+            context.restore();
+          }
+          const musicPhase = (now / 1150) % 1;
+          context.save();
+          context.globalAlpha = .8 * (1 - musicPhase);
+          context.font = '17px "Segoe UI Emoji", sans-serif';
+          context.textAlign = 'center';
+          context.fillText('🎵', drawX - 12, drawY - 130 - musicPhase * 26);
+          context.restore();
+        }
+
+        let statusText = activityLabel || '🍳 ล้างจาน';
+        let statusColor = '#2c8a55';
+        let statusBorder = '#9cf0b7';
+        if (now < meowFeedbackUntil) {
+          statusText = '😊 ❤️ +3 วิ!';
+          statusColor = '#386c48';
+          statusBorder = '#b7f4a8';
+        } else if (stage === 1) {
+          statusText = 'เริ่มเอะใจ';
+          statusColor = '#a77716';
+          statusBorder = '#ffe078';
+        } else if (stage === 2) {
+          statusText = 'เริ่มหันมา!';
+          statusColor = '#b95b20';
+          statusBorder = '#ffae60';
+        } else if (stage >= 3) {
+          statusText = 'กำลังจะหันมา!';
+          statusColor = '#a62828';
+          statusBorder = '#ff7878';
+        } else if (checking) {
+          statusText = '🔍 กำลังตรวจห้อง';
+          statusColor = '#842020';
+          statusBorder = '#ff7777';
+        } else if (cleaning) {
+          statusColor = '#80551c';
+          statusBorder = '#ffd166';
+        }
+        const dogFramedSpeech = reaction === 'DOG_FRAMED' && checking && now - reactionAt < 2300;
+        if (dogFramedSpeech) {
+          statusText = '😡 เจ้าตูบทำอีกแล้วเรอะ!';
+          statusColor = '#842020';
+          statusBorder = '#ff7777';
+        }
+
+        const statusX = Math.max(90, Math.min(WIDTH - 80, drawX + 120));
+        const statusY = Math.max(82, drawY - 150);
+        context.save();
+        if (stage >= 3) context.globalAlpha = .62 + .38 * Math.abs(Math.sin(now / 75));
+        drawSpeechBubble(statusText, statusX, statusY, 150, statusColor, statusBorder, drawX + 6, drawY - 112);
+        context.restore();
+        drawOwnerWarningGauge(now, stage, statusX, statusY);
+
+        if (now < meowFeedbackUntil) {
+          context.fillStyle = '#ffe49a';
+          context.font = 'bold 18px "Segoe UI Emoji", sans-serif';
+          context.textAlign = 'center';
+          context.fillText('😊', drawX + 40, drawY - 104);
+        }
+        if (reaction === 'DOG_FRAMED' && checking && now - reactionAt < 2300) {
+          context.fillStyle = '#ffdbaf';
+          context.font = 'bold 15px "Segoe UI", sans-serif';
+          context.textAlign = 'center';
+          context.fillText('👈', drawX - 48, drawY - 54);
+        }
+      }
+
+      function drawOwnerActivityProps(activity, x, y, direction, phase, now) {
+        context.save();
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        if (activity === 'dish') {
+          for (let index = 0; index < 3; index += 1) {
+            const bubblePhase = (now / 900 + index / 3) % 1;
+            context.globalAlpha = (1 - bubblePhase) * .75;
+            context.strokeStyle = '#d9f5ff';
+            context.lineWidth = 2;
+            context.beginPath();
+            context.arc(x - 53 + index * 11, y - 93 - bubblePhase * 28, 3 + index, 0, Math.PI * 2);
+            context.stroke();
+          }
+        } else if (activity === 'wipe') {
+          context.font = '25px "Segoe UI Emoji", sans-serif';
+          context.fillText('🧽', x + direction * 57, y - 24 + Math.sin(now / 90) * 3);
+        } else if (activity === 'sweep' || activity === 'cleanup') {
+          context.font = '26px "Segoe UI Emoji", sans-serif';
+          context.save();
+          context.translate(x + direction * 54, y + 22);
+          context.rotate(Math.sin(now / 105) * .12);
+          context.fillText('🧹', 0, 0);
+          context.restore();
+          for (let index = 0; index < 4; index += 1) {
+            const dustPhase = (now / 540 + index / 4) % 1;
+            context.globalAlpha = (1 - dustPhase) * .55;
+            context.fillStyle = '#f2dcb2';
+            context.beginPath();
+            context.arc(x - direction * (38 + dustPhase * 24), y + 30 - dustPhase * 14, 2 + index % 2, 0, Math.PI * 2);
+            context.fill();
+          }
+        }
+        context.restore();
+      }
+
+      function drawDebris(delta) {
+        debris = debris.filter((piece) => piece.life > 0);
+        debris.forEach((piece) => {
+          piece.x += piece.vx * delta / 16.67;
+          piece.y += piece.vy * delta / 16.67;
+          piece.vy += .2 * delta / 16.67;
+          piece.life -= .035 * delta / 16.67;
+          context.globalAlpha = Math.max(0, piece.life);
+          context.fillStyle = '#ffe9a8';
+          context.beginPath();
+          context.arc(piece.x, piece.y, 3, 0, Math.PI * 2);
+          context.fill();
+        });
+        context.globalAlpha = 1;
+
+        if (performance.now() - lastCrashAt < 900) {
+          context.save();
+          context.globalAlpha = 1 - (performance.now() - lastCrashAt) / 900;
+          context.font = 'bold 27px "Segoe UI", sans-serif';
+          context.textAlign = 'center';
+          context.lineWidth = 4;
+          context.strokeStyle = '#60351e';
+          context.fillStyle = '#fff5dc';
+          context.strokeText('เพล้ง! 💥', lastCrashX, 393);
+          context.fillText('เพล้ง! 💥', lastCrashX, 393);
+          context.restore();
+        }
+      }
+
+      function drawHud(now) {
+        context.textAlign = 'left';
+        context.fillStyle = 'rgba(14,32,28,.9)';
+        context.fillRect(16, 16, 214, 60);
+        context.strokeStyle = '#fff9e95c';
+        context.strokeRect(16, 16, 214, 60);
+        const level = currentLevel();
+        const titles = ['ลูกแมวมือใหม่', 'จอมป่วนในครัว', 'ราชินีตบโต๊ะ', 'ตำนานแมวแสบ'];
+        context.fillStyle = '#ffd166';
+        context.font = 'bold 17px "Segoe UI", sans-serif';
+        context.fillText(`เลเวล ${level}`, 29, 40);
+        context.fillStyle = '#fff9e9';
+        context.font = '13px "Segoe UI", sans-serif';
+        context.fillText(titles[level - 1], 29, 61);
+
+        context.fillStyle = 'rgba(14,32,28,.92)';
+        context.fillRect(340, 16, 240, 60);
+        context.strokeStyle = '#fff9e95c';
+        context.strokeRect(340, 16, 240, 60);
+        context.textAlign = 'center';
+        context.fillStyle = '#fff9e9';
+        context.font = 'bold 13px "Segoe UI", sans-serif';
+        context.fillText('คะแนนปลาทู 🐟', 460, 36);
+        context.fillStyle = '#ffd166';
+        context.font = 'bold 23px "Segoe UI", sans-serif';
+        context.fillText(String(game.score), 460, 63);
+
+        context.fillStyle = 'rgba(14,32,28,.92)';
+        context.fillRect(690, 16, 214, 60);
+        context.strokeStyle = '#fff9e95c';
+        context.strokeRect(690, 16, 214, 60);
+        context.textAlign = 'left';
+        context.fillStyle = '#fff9e9';
+        context.font = 'bold 13px "Segoe UI", sans-serif';
+        context.fillText(`เกจความป่วน · คูณ ${chaosMultiplier()} เท่า`, 703, 36);
+        context.fillStyle = '#30261e';
+        context.fillRect(703, 49, 188, 13);
+        context.fillStyle = chaosMultiplier() === 3 ? '#ff7b55' : '#ffd166';
+        context.fillRect(705, 51, 184 * chaos / 100, 9);
+
+        if (feverMode) {
+          context.fillStyle = 'rgba(104,35,27,.92)';
+          context.fillRect(367, 84, 186, 27);
+          context.strokeStyle = '#ffd166';
+          context.strokeRect(367, 84, 186, 27);
+          context.fillStyle = '#ffe28a';
+          context.textAlign = 'center';
+          context.font = 'bold 14px "Segoe UI", sans-serif';
+          context.fillText('โหมดเจ้าเล่ห์ · คูณ 2', 460, 103);
+        }
+      }
+
+      function drawBoxAndLabel(now) {
+        if (!catHiding) drawBox(now);
+      }
+
+      function drawGameOver() {
+        if (!gameOver) return;
+        context.fillStyle = 'rgba(8,17,16,.78)';
+        context.fillRect(0, 0, WIDTH, HEIGHT);
+        context.textAlign = 'center';
+        context.fillStyle = '#ffd166';
+        context.font = 'bold 42px "Segoe UI", sans-serif';
+        context.fillText('จบเกม!', WIDTH / 2, 158);
+        context.fillStyle = '#fff9e9';
+        context.font = 'bold 22px "Segoe UI", sans-serif';
+        context.fillText(`คะแนนปลาทูรวม ${game.score} คะแนน`, WIDTH / 2, 211);
+        context.font = '18px "Segoe UI", sans-serif';
+        context.fillText(`ตบของแตก ${totalBrokenItems} ชิ้น`, WIDTH / 2, 246);
+        context.fillText(`โยนบาปให้หมาสำเร็จ ${successfulFrames} ครั้ง`, WIDTH / 2, 276);
+        context.fillText(`คอมโบสูงสุด ${maxCombo} เท่า`, WIDTH / 2, 306);
+      }
+
+      function drawFeverGlow() {
+        if (!feverMode) return;
+        context.save();
+        context.fillStyle = 'rgba(255,190,42,.07)';
+        context.fillRect(0, 0, WIDTH, HEIGHT);
+        context.shadowColor = '#ffd34f';
+        context.shadowBlur = 22;
+        context.strokeStyle = 'rgba(255,211,79,.9)';
+        context.lineWidth = 8;
+        context.strokeRect(5, 5, WIDTH - 10, HEIGHT - 10);
+        context.restore();
+      }
+
+      function updateItems(delta, now) {
+        chaos = Math.max(0, chaos - delta * .004);
+        if (!gameOver && now >= nextFishAt && !items.some((item) => item.special)) {
+          spawnGoldFish(now);
+        }
+        const fish = items.find((item) => item.special && !item.falling && !item.fallen);
+        if (fish && now >= fishExpiresAt) {
+          items = items.filter((item) => item !== fish);
+          setMessage('ปลาทูทองคำว่ายหนีไปแล้ว');
+        }
+        items.forEach((item) => {
+          if (!item.falling) return;
+          item.velocityY += .34 * (delta / 16.67);
+          item.y += item.velocityY * (delta / 16.67);
+          const slide = Math.min(5 * delta / 16.67, 120 - item.fallDistance);
+          item.x += item.fallDirection * slide;
+          item.fallDistance += slide;
+          if (item.y > 386) {
+            item.falling = false;
+            item.fallen = true;
+            recordFallenItem(item);
+          }
+        });
+
+        debris = debris.filter((piece) => piece.life > 0);
+        if (spritesReady) updateOwner(now);
+      }
+
+      function render(now) {
+        const delta = lastFrameAt ? Math.min(40, now - lastFrameAt) : 16.67;
+        lastFrameAt = now;
+        updateItems(delta, now);
+        context.clearRect(0, 0, WIDTH, HEIGHT);
+        const shaking = ['GIANT', 'CAUGHT', 'GAME_OVER'].includes(reaction);
+        const shakeProgress = shaking ? Math.max(0, 1 - (now - reactionAt) / 900) : 0;
+        const shakeStrength = shakeProgress * 7;
+        context.save();
+        if (shakeStrength) {
+          context.translate(
+            Math.sin(now / 14) * shakeStrength,
+            Math.cos(now / 17) * shakeStrength * .6
+          );
+        }
+        drawBackground();
+        drawCatBed();
+        if (ownerFacing === 'giant') {
+          drawItems();
+          drawGroundSpills();
+          drawDog(now, delta);
+          drawCat(now, delta);
+          drawOwner(now);
+        } else {
+          drawOwner(now);
+          drawItems();
+          drawGroundSpills();
+          drawDog(now, delta);
+          drawCat(now, delta);
+        }
+        drawBoxAndLabel(now);
+        drawDebris(delta);
+        drawFeverGlow();
+        drawHud(now);
+        drawGameOver();
+        context.restore();
+        requestAnimationFrame(render);
+      }
+
+      function loadLeaderboard() {
+        const tbody = document.getElementById('leaderboard');
+        fetch('/api/leaderboard')
+          .then((response) => {
+            if (!response.ok) throw new Error('โหลดกระดานคะแนนไม่สำเร็จ');
+            return response.json();
+          })
+          .then((entries) => {
+            tbody.replaceChildren();
+            if (!entries.length) {
+              const row = tbody.insertRow();
+              const cell = row.insertCell();
+              cell.colSpan = 3;
+              cell.textContent = 'ยังไม่มีคะแนน มาเป็นคนแรกเลย!';
+              return;
+            }
+            entries.forEach((entry, index) => {
+              const row = tbody.insertRow();
+              row.insertCell().textContent = index + 1;
+              row.insertCell().textContent = entry.name;
+              row.insertCell().textContent = entry.score;
+            });
+          })
+          .catch(() => {
+            tbody.replaceChildren();
+            const row = tbody.insertRow();
+            const cell = row.insertCell();
+            cell.colSpan = 3;
+            cell.textContent = 'โหลดกระดานคะแนนไม่สำเร็จ กรุณาลองใหม่';
+          });
+      }
+
+      document.getElementById('score-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const name = document.getElementById('player-name').value.trim();
+        if (!name) return;
+        fetch('/api/leaderboard', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, score: game.score })
+        })
+          .then(async (response) => {
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'บันทึกคะแนนไม่สำเร็จ');
+            setMessage('บันทึกคะแนนเรียบร้อยแล้ว!');
+            loadLeaderboard();
+          })
+          .catch(() => setMessage('บันทึกคะแนนไม่สำเร็จ กรุณาลองใหม่'));
+      });
+
+      document.getElementById('restart-button').addEventListener('click', () => {
+        game = new BlameTheDogGame();
+        createItems();
+        activeItem = null;
+        activeItemUntil = 0;
+        spills = [];
+        debris = [];
+        fishBonusPending = 0;
+        fishExpiresAt = 0;
+        nextFishAt = performance.now() + 7000 + Math.random() * 6000;
+        roundActive = false;
+        roundCooldown = false;
+        gameOver = false;
+        totalSwats = 0;
+        totalBrokenItems = 0;
+        successfulFrames = 0;
+        maxCombo = 1;
+        chaos = 0;
+        feverMode = false;
+        heavyPaw = false;
+        dogCalled = false;
+        catHidden = false;
+        updateBoxToggleButton();
+        catHiding = false;
+        catMotionFrom = 0;
+        catMotionTo = 0;
+        catX = CAT_REST_X;
+        catY = CAT_COUNTER_Y;
+        catTargetX = CAT_REST_X;
+        catTargetY = CAT_COUNTER_Y;
+        catFacingRight = false;
+        catJump = null;
+        catAttackPending = false;
+        catAttackHeight = 32;
+        catAttackType = 'vertical';
+        catTimeout = false;
+        catTimeoutEndsAt = 0;
+        catTimeoutMotion = null;
+        boxImpactAt = 0;
+        dogX = 500;
+        dogY = 435;
+        reaction = '';
+        reactionAt = 0;
+        catchTransitionPending = false;
+        ownerGiantStartedAt = 0;
+        ownerGiantUntil = 0;
+        ownerCleanupStartedAt = 0;
+        ownerCleanupEndsAt = 0;
+        ownerCleanupFromX = OWNER_X;
+        ownerCleanupTargetX = OWNER_X;
+        ownerCheckFromX = OWNER_X;
+        ownerCheckFromY = OWNER_Y;
+        const now = performance.now();
+        ownerChoreStartedAt = now;
+        meowFeedbackUntil = 0;
+        document.getElementById('canvas-restart').hidden = true;
+        scheduleOwnerTurn(now);
+        updateStats();
+        setMessage('คลิกรัว ๆ ที่สิ่งของบนเคาน์เตอร์เพื่อเริ่มก่อเรื่อง!');
+      });
+      document.getElementById('canvas-restart').addEventListener('click', () => {
+        document.getElementById('restart-button').click();
+      });
+
+      createItems();
+      updateStats();
+      updateBoxToggleButton();
+      loadLeaderboard();
+      requestAnimationFrame(render);
+      loadSprites()
+        .then(() => {
+          spritesReady = true;
+          scheduleOwnerTurn(performance.now());
+        })
+        .catch((error) => {
+          spritesReady = true;
+          setMessage(error.message);
+          console.error('โหลดภาพเกมไม่ครบ', error);
+          scheduleOwnerTurn(performance.now());
+        });
+    })();
+  </script>
+</body>
+</html>
